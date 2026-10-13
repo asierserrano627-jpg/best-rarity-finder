@@ -1,733 +1,433 @@
-<!DOCTYPE html>  <html lang="es">  
-<head>  
-<meta charset="UTF-8">  
-<meta name="viewport" content="width=device-width, initial-scale=1">  
-<title>BEST RARITY FINDER</title>  
-<style>  
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Inter:wght@400;600;700;800&display=swap');  :root {
---gold: #f4d27b;
---gold2: #a87525;
---bg: #070707;
---panel: #111111;
---muted: #929292;
---green: #70f3a5;
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BEST RARITY FINDER</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Inter:wght@400;600;700;800&display=swap');
+:root{--gold:#f4d27b;--gold2:#a87525;--bg:#070707;--panel:#111;--muted:#929292;--green:#70f3a5}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:#fff;font-family:Inter,sans-serif;background:radial-gradient(ellipse at 50% 0%,#9d78221c,transparent 45%),radial-gradient(ellipse at 100% 50%,#d5a33a0b,transparent 40%),#070707}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;background-image:linear-gradient(#ffffff06 1px,transparent 1px),linear-gradient(90deg,#ffffff06 1px,transparent 1px);background-size:40px 40px;mask-image:linear-gradient(#000,transparent)}
+.wrap{width:min(1100px,calc(100% - 30px));margin:auto}
+header{height:82px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #ffffff13}
+.brand{display:flex;align-items:center;gap:13px}
+.logo{width:48px;height:48px;display:grid;place-items:center;border-radius:15px;background:linear-gradient(145deg,#fff0b7,#c18c31 48%,#38230a);border:1px solid #ffe6a0;box-shadow:0 0 28px #e5b74735;animation:float 3s ease-in-out infinite}
+.logo svg{width:32px}
+.brand-name{font:900 13px Orbitron,sans-serif;letter-spacing:1.2px}
+.brand-name small{display:block;margin-top:5px;color:var(--gold);font:700 9px Inter,sans-serif;letter-spacing:2px}
+.status{color:var(--green);font-size:10px;letter-spacing:1px}
+.status i{display:inline-block;width:7px;height:7px;margin-right:6px;border-radius:50%;background:var(--green);box-shadow:0 0 12px var(--green)}
+.hero{text-align:center;padding:60px 0 36px}
+.pill{display:inline-block;padding:9px 14px;border:1px solid #f4d27b44;border-radius:40px;color:var(--gold);background:#f4d27b09;font-size:10px;font-weight:800;letter-spacing:2px}
+h1{margin:25px 0 15px;font:900 clamp(32px,6vw,67px)/1.12 Orbitron,sans-serif;letter-spacing:-2px}
+.gold-text{color:transparent;background:linear-gradient(100deg,#fff,#f4d27b,#fff2b9,#b68a35);background-size:250%;background-clip:text;-webkit-background-clip:text;animation:shine 5s linear infinite}
+.subtitle{max-width:560px;margin:auto;color:#999;font-size:13px;line-height:1.8}
+.actions{display:flex;flex-wrap:wrap;justify-content:center;gap:11px;margin-top:27px}
+button{cursor:pointer;font:800 10px Inter,sans-serif;letter-spacing:1px;transition:.2s}
+button:disabled{opacity:.5;cursor:default}
+.btn{padding:14px 18px;border:1px solid #ffffff20;border-radius:10px;color:#fff;background:linear-gradient(#1b1b1b,#101010)}
+.btn:hover:not(:disabled){transform:translateY(-2px);border-color:var(--gold);box-shadow:0 0 22px #f4d27b15}
+.btn.primary{color:#171108;border-color:var(--gold);background:linear-gradient(110deg,#ffedb0,#c99a3f,#f4d27b);box-shadow:0 0 24px #d4a74422}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:25px}
+.stat,.panel{border:1px solid #ffffff12;border-radius:15px;background:linear-gradient(145deg,#151515,#0d0d0d);box-shadow:0 15px 45px #0004}
+.stat{padding:19px}
+.label{color:#929292;font-size:9px;font-weight:700;letter-spacing:1.4px}
+.value{margin-top:10px;font:700 25px Orbitron,sans-serif}
+.layout{display:grid;grid-template-columns:1.5fr .85fr;gap:15px;align-items:start;padding-bottom:50px}
+.panel{overflow:hidden}
+.top-panel{margin-bottom:15px}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:20px;border-bottom:1px solid #ffffff12}
+.panel-title{font:700 11px Orbitron,sans-serif;letter-spacing:1px}
+.panel-sub{margin-top:6px;color:#888;font-size:10px;line-height:1.5}
+.tag{padding:6px 9px;border:1px solid #70f3a533;border-radius:6px;color:var(--green);font-size:9px;white-space:nowrap}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;padding:13px;border-bottom:1px solid #ffffff12}
+.toolbar .btn{padding:10px;font-size:9px}
+#serverList,#topList{display:grid;gap:9px;padding:12px}
+.server,.find{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;border:1px solid #ffffff10;border-radius:11px;background:#ffffff03;transition:.2s}
+.server:hover,.find:hover{border-color:#f4d27b55;background:#f4d27b06}
+.find:first-child{border-color:#f4d27b66;background:#f4d27b0a}
+.pet{width:56px;height:56px;flex:none;border-radius:10px;object-fit:contain;background:#ffffff08;border:1px solid #ffffff12}
+.pet-ph{display:grid;place-items:center;color:var(--gold);font:700 18px Orbitron,sans-serif}
+.rank{min-width:38px;color:var(--gold);font:900 16px Orbitron,sans-serif}
+.find-main{flex:1;min-width:0}
+.find-name{font:700 13px Orbitron,sans-serif;overflow-wrap:anywhere}
+.ok{margin-left:8px;color:var(--green);font:700 9px Inter,sans-serif;letter-spacing:1px}
+.find-money{text-align:right;color:var(--gold);font:700 17px Orbitron,sans-serif;white-space:nowrap}
+.find-money small{display:block;margin-bottom:4px;color:#888;font:700 8px Inter,sans-serif;letter-spacing:1px}
+.server-id{margin-top:8px;color:#e9d9ae;font:600 10px Orbitron,sans-serif;overflow-wrap:anywhere}
+.find-name+.meta,.server-id:first-child{margin-top:0}
+.meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:9px;color:#929292;font-size:10px}
+.meta b{color:#eee}
+.server-buttons{display:flex;flex-direction:column;gap:6px}
+.join{padding:10px;border:1px solid #f4d27b55;border-radius:7px;color:var(--gold);background:#f4d27b0d;white-space:nowrap}
+.copy{padding:8px;border:1px solid #ffffff16;border-radius:7px;color:#aaa;background:#ffffff05}
+.empty{padding:30px 15px;color:#929292;text-align:center;font-size:12px;line-height:1.8}
+.side-content{padding:17px}
+.rarity{padding:17px;border:1px solid #f4d27b26;border-radius:12px;background:radial-gradient(ellipse at top right,#f4d27b0c,transparent 60%)}
+.rarity-icon{margin-bottom:14px;color:var(--gold);font-size:30px;text-shadow:0 0 20px #f4d27b77}
+.rarity h3{font:700 11px Orbitron,sans-serif}
+.rarity p{color:#999;font-size:11px;line-height:1.8}
+.notice{margin-top:15px;padding:12px;border:1px solid #f4d27b25;border-radius:9px;color:#c8b989;font-size:10px;line-height:1.7}
+.api-info{margin-top:13px;padding:13px;border:1px solid #ffffff12;border-radius:10px}
+.api-row{display:flex;justify-content:space-between;gap:10px;padding:7px 0;color:#929292;font-size:10px}
+.api-row strong{color:#eee;text-align:right}
+footer{padding:22px 0 30px;border-top:1px solid #ffffff12;color:#777;font-size:10px;text-align:center}
+footer b{color:var(--gold)}
+.toast{position:fixed;bottom:20px;left:50%;z-index:5;max-width:calc(100% - 30px);padding:13px 17px;border:1px solid #f4d27b55;border-radius:10px;color:var(--gold);background:#171717;opacity:0;transform:translate(-50%,15px);pointer-events:none;transition:.25s;font-size:11px}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@keyframes shine{to{background-position:250%}}
+@keyframes float{50%{transform:translateY(-3px) rotate(2deg)}}
+@media(max-width:760px){
+.hero{padding-top:50px}
+.layout{grid-template-columns:1fr}
+.stats{gap:7px}.stat{padding:13px 10px}.value{font-size:19px}
+.label{font-size:8px;letter-spacing:.7px}
+.brand-name{font-size:10px}.brand-name small{font-size:8px;letter-spacing:1px}
+.logo{width:41px;height:41px}.status{font-size:9px}
+.server,.find{align-items:flex-start;flex-direction:column}
+.find-money{text-align:left}
+.server-buttons{flex-direction:row;width:100%}
+.server-buttons button{flex:1}
 }
-
-- { box-sizing: border-box; }
-
-body {
-margin: 0;
-min-height: 100vh;
-color: #fff;
-font-family: Inter, sans-serif;
-background:
-radial-gradient(ellipse at 50% 0%, #9d78221c, transparent 45%),
-radial-gradient(ellipse at 100% 50%, #d5a33a0b, transparent 40%),
-#070707;
-}
-
-body::before {
-content: "";
-position: fixed;
-inset: 0;
-pointer-events: none;
-background-image:
-linear-gradient(#ffffff06 1px, transparent 1px),
-linear-gradient(90deg, #ffffff06 1px, transparent 1px);
-background-size: 40px 40px;
-mask-image: linear-gradient(#000, transparent);
-}
-
-.wrap {
-width: min(1100px, calc(100% - 30px));
-margin: auto;
-}
-
-header {
-height: 82px;
-display: flex;
-align-items: center;
-justify-content: space-between;
-border-bottom: 1px solid #ffffff13;
-}
-
-.brand {
-display: flex;
-align-items: center;
-gap: 13px;
-}
-
-.logo {
-width: 48px;
-height: 48px;
-display: grid;
-place-items: center;
-border-radius: 15px;
-background: linear-gradient(145deg, #fff0b7, #c18c31 48%, #38230a);
-border: 1px solid #ffe6a0;
-box-shadow: 0 0 28px #e5b74735;
-animation: float 3s ease-in-out infinite;
-}
-
-.logo svg { width: 32px; }
-
-.brand-name {
-font: 900 13px Orbitron, sans-serif;
-letter-spacing: 1.2px;
-}
-
-.brand-name small {
-display: block;
-margin-top: 5px;
-color: var(--gold);
-font: 700 9px Inter, sans-serif;
-letter-spacing: 2px;
-}
-
-.status {
-color: var(--green);
-font-size: 10px;
-letter-spacing: 1px;
-}
-
-.status i {
-display: inline-block;
-width: 7px;
-height: 7px;
-margin-right: 6px;
-border-radius: 50%;
-background: var(--green);
-box-shadow: 0 0 12px var(--green);
-}
-
-.hero {
-text-align: center;
-padding: 72px 0 40px;
-}
-
-.pill {
-display: inline-block;
-padding: 9px 14px;
-border: 1px solid #f4d27b44;
-border-radius: 40px;
-color: var(--gold);
-background: #f4d27b09;
-font-size: 10px;
-font-weight: 800;
-letter-spacing: 2px;
-}
-
-h1 {
-margin: 25px 0 15px;
-font: 900 clamp(32px, 6vw, 67px)/1.12 Orbitron, sans-serif;
-letter-spacing: -2px;
-}
-
-.gold-text {
-color: transparent;
-background: linear-gradient(100deg, #fff, #f4d27b, #fff2b9, #b68a35);
-background-size: 250%;
-background-clip: text;
--webkit-background-clip: text;
-animation: shine 5s linear infinite;
-}
-
-.subtitle {
-max-width: 560px;
-margin: auto;
-color: #999;
-font-size: 13px;
-line-height: 1.8;
-}
-
-.actions {
-display: flex;
-flex-wrap: wrap;
-justify-content: center;
-gap: 11px;
-margin-top: 27px;
-}
-
-button {
-cursor: pointer;
-font: 800 10px Inter, sans-serif;
-letter-spacing: 1px;
-transition: .2s;
-}
-
-.btn {
-padding: 14px 18px;
-border: 1px solid #ffffff20;
-border-radius: 10px;
-color: white;
-background: linear-gradient(#1b1b1b, #101010);
-}
-
-.btn:hover {
-transform: translateY(-2px);
-border-color: var(--gold);
-box-shadow: 0 0 22px #f4d27b15;
-}
-
-.btn.primary {
-color: #171108;
-border-color: var(--gold);
-background: linear-gradient(110deg, #ffedb0, #c99a3f, #f4d27b);
-box-shadow: 0 0 24px #d4a74422;
-}
-
-.stats {
-display: grid;
-grid-template-columns: repeat(3, 1fr);
-gap: 12px;
-margin-bottom: 25px;
-}
-
-.stat, .panel {
-border: 1px solid #ffffff12;
-border-radius: 15px;
-background: linear-gradient(145deg, #151515, #0d0d0d);
-box-shadow: 0 15px 45px #0004;
-}
-
-.stat { padding: 19px; }
-
-.label {
-color: #929292;
-font-size: 9px;
-font-weight: 700;
-letter-spacing: 1.4px;
-}
-
-.value {
-margin-top: 10px;
-font: 700 25px Orbitron, sans-serif;
-}
-
-.layout {
-display: grid;
-grid-template-columns: 1.5fr .85fr;
-gap: 15px;
-align-items: start;
-padding-bottom: 50px;
-}
-
-.panel { overflow: hidden; }
-
-.panel-head {
-display: flex;
-align-items: center;
-justify-content: space-between;
-gap: 10px;
-padding: 20px;
-border-bottom: 1px solid #ffffff12;
-}
-
-.panel-title {
-font: 700 11px Orbitron, sans-serif;
-letter-spacing: 1px;
-}
-
-.panel-sub {
-margin-top: 6px;
-color: #888;
-font-size: 10px;
-}
-
-.tag {
-padding: 6px 9px;
-border: 1px solid #70f3a533;
-border-radius: 6px;
-color: var(--green);
-font-size: 9px;
-}
-
-.toolbar {
-display: flex;
-flex-wrap: wrap;
-gap: 8px;
-padding: 13px;
-border-bottom: 1px solid #ffffff12;
-}
-
-.toolbar .btn {
-padding: 10px;
-font-size: 9px;
-}
-
-#serverList {
-display: grid;
-gap: 9px;
-padding: 12px;
-}
-
-.server {
-display: flex;
-align-items: center;
-justify-content: space-between;
-gap: 10px;
-padding: 14px;
-border: 1px solid #ffffff10;
-border-radius: 11px;
-background: #ffffff03;
-transition: .2s;
-}
-
-.server:hover {
-border-color: #f4d27b55;
-background: #f4d27b06;
-}
-
-.server-id {
-color: #e9d9ae;
-font: 600 10px Orbitron, sans-serif;
-overflow-wrap: anywhere;
-}
-
-.meta {
-display: flex;
-flex-wrap: wrap;
-gap: 10px;
-margin-top: 9px;
-color: #929292;
-font-size: 10px;
-}
-
-.meta b { color: #eee; }
-
-.server-buttons {
-display: flex;
-flex-direction: column;
-gap: 6px;
-}
-
-.join {
-padding: 10px;
-border: 1px solid #f4d27b55;
-border-radius: 7px;
-color: var(--gold);
-background: #f4d27b0d;
-white-space: nowrap;
-}
-
-.copy {
-padding: 8px;
-border: 1px solid #ffffff16;
-border-radius: 7px;
-color: #aaa;
-background: #ffffff05;
-}
-
-.empty {
-padding: 30px 15px;
-color: #929292;
-text-align: center;
-font-size: 12px;
-line-height: 1.8;
-}
-
-.side-content { padding: 17px; }
-
-.rarity {
-padding: 17px;
-border: 1px solid #f4d27b26;
-border-radius: 12px;
-background: radial-gradient(ellipse at top right, #f4d27b0c, transparent 60%);
-}
-
-.rarity-icon {
-margin-bottom: 14px;
-color: var(--gold);
-font-size: 30px;
-text-shadow: 0 0 20px #f4d27b77;
-}
-
-.rarity h3 {
-font: 700 11px Orbitron, sans-serif;
-}
-
-.rarity p {
-color: #999;
-font-size: 11px;
-line-height: 1.8;
-}
-
-.notice {
-margin-top: 15px;
-padding: 12px;
-border: 1px solid #f4d27b25;
-border-radius: 9px;
-color: #c8b989;
-font-size: 10px;
-line-height: 1.7;
-}
-
-.api-info {
-margin-top: 13px;
-padding: 13px;
-border: 1px solid #ffffff12;
-border-radius: 10px;
-}
-
-.api-row {
-display: flex;
-justify-content: space-between;
-gap: 10px;
-padding: 7px 0;
-color: #929292;
-font-size: 10px;
-}
-
-.api-row strong {
-color: #eee;
-text-align: right;
-}
-
-footer {
-padding: 22px 0 30px;
-border-top: 1px solid #ffffff12;
-color: #777;
-font-size: 10px;
-text-align: center;
-}
-
-footer b { color: var(--gold); }
-
-.toast {
-position: fixed;
-bottom: 20px;
-left: 50%;
-z-index: 5;
-max-width: calc(100% - 30px);
-padding: 13px 17px;
-border: 1px solid #f4d27b55;
-border-radius: 10px;
-color: var(--gold);
-background: #171717;
-opacity: 0;
-transform: translate(-50%, 15px);
-pointer-events: none;
-transition: .25s;
-font-size: 11px;
-}
-
-.toast.show {
-opacity: 1;
-transform: translate(-50%, 0);
-}
-
-@keyframes shine { to { background-position: 250%; } }
-@keyframes float { 50% { transform: translateY(-3px) rotate(2deg); } }
-
-@media(max-width:760px) {
-.hero { padding-top: 50px; }
-.layout { grid-template-columns: 1fr; }
-.stats { gap: 7px; }
-.stat { padding: 13px 10px; }
-.value { font-size: 19px; }
-.label { font-size: 8px; letter-spacing: .7px; }
-.brand-name { font-size: 10px; }
-.brand-name small { font-size: 8px; letter-spacing: 1px; }
-.logo { width: 41px; height: 41px; }
-.status { font-size: 9px; }
-.server { align-items: flex-start; flex-direction: column; }
-.server-buttons { flex-direction: row; width: 100%; }
-.server-buttons button { flex: 1; }
-}
+@media(prefers-reduced-motion:reduce){.logo,.gold-text{animation:none}}
 </style>
+</head>
+<body>
+<header class="wrap">
+  <div class="brand">
+    <div class="logo">
+      <svg viewBox="0 0 32 32" fill="none">
+        <path d="M16 3 27 9v13L16 29 5 22V9L16 3Z" stroke="#fff3c5" stroke-width="1.5"/>
+        <path d="m16 8 6 3.5v8L16 24l-6-4.5v-8L16 8Z" fill="#fff3c5" fill-opacity=".2" stroke="#fff"/>
+        <path d="m16 11 2 4 4 1-4 2-2 4-2-4-4-2 4-1 2-4Z" fill="#fff1bd"/>
+      </svg>
+    </div>
+    <div class="brand-name">BEST RARITY FINDER<small>STEAL AN EGG · SERVER INTEL</small></div>
+  </div>
+  <div class="status"><i></i><span id="apiStatus">CONECTANDO</span></div>
+</header>
 
-</head>  <body>  
-<header class="wrap">  
-  <div class="brand">  
-    <div class="logo">  
-      <svg viewBox="0 0 32 32" fill="none">  
-        <path d="M16 3 27 9v13L16 29 5 22V9L16 3Z"  
-          stroke="#fff3c5" stroke-width="1.5"/>  
-        <path d="m16 8 6 3.5v8L16 24l-6-4.5v-8L16 8Z"  
-          fill="#fff3c5" fill-opacity=".2" stroke="#fff"/>  
-        <path d="m16 11 2 4 4 1-4 2-2 4-2-4-4-2 4-1 2-4Z"  
-          fill="#fff1bd"/>  
-      </svg>  
-    </div>  
-    <div class="brand-name">  
-      BEST RARITY FINDER  
-      <small>STEAL AN EGG · SERVER INTEL</small>  
-    </div>  
-  </div>  
-  <div class="status"><i></i><span id="apiStatus">CONECTANDO</span></div>  
-</header>  <main class="wrap">  
-  <section class="hero">  
-    <div class="pill">✦ PREMIUM SERVER SCANNER ✦</div>  
-    <h1>HUNT THE<br><span class="gold-text">RAREST.</span></h1>  
-    <p class="subtitle">  
-      A premium server finder for Steal An Egg.  
-      Scan public servers, compare player counts  
-      and jump into a selected session.  
-    </p>  
-    <div class="actions">  
-      <button class="btn primary" id="globalScan">✦ GLOBAL SCAN</button>  
-      <button class="btn" id="refreshTop">↻ REFRESH SERVERS</button>  
-    </div>  
-  </section>    <section class="stats">  
-    <div class="stat">  
-      <div class="label">SERVERS LOADED</div>  
-      <div class="value" id="serverCount">—</div>  
-    </div>  
-    <div class="stat">  
-      <div class="label">PLAYERS DETECTED</div>  
-      <div class="value" id="playerCount">—</div>  
-    </div>  
-    <div class="stat">  
-      <div class="label">OPEN SLOTS</div>  
-      <div class="value" id="slotCount">—</div>  
-    </div>  
-  </section>    <section class="layout">  
-    <div class="panel">  
-      <div class="panel-head">  
-        <div>  
-          <div class="panel-title">PUBLIC SERVER FINDER</div>  
-          <div class="panel-sub">Live public server results</div>  
-        </div>  
-        <span class="tag" id="listState">READY</span>  
-      </div>  <div class="toolbar">  
-    <button class="btn primary" id="scanBtn">GLOBAL SCAN</button>  
-    <button class="btn" id="refreshBtn">↻ REFRESH</button>  
-    <button class="btn" id="moreBtn">LOAD MORE ↓</button>  
-  </div>  
+<main class="wrap">
+  <section class="hero">
+    <div class="pill">✦ PREMIUM SERVER SCANNER ✦</div>
+    <h1>HUNT THE<br><span class="gold-text">RAREST.</span></h1>
+    <p class="subtitle">The ranking below fills automatically from scanner clients that visit public servers of Steal An Egg. It only includes servers they have actually inspected.</p>
+    <div class="actions">
+      <button class="btn primary" id="globalScan">✦ REFRESH ALL</button>
+      <button class="btn" id="refreshTop">↻ REFRESH SERVERS</button>
+    </div>
+  </section>
 
-  <div id="serverList">  
-    <div class="empty">Loading public servers…</div>  
-  </div>  
-</div>  
+  <section class="stats">
+    <div class="stat"><div class="label">SERVERS LOADED</div><div class="value" id="serverCount">—</div></div>
+    <div class="stat"><div class="label">PLAYERS DETECTED</div><div class="value" id="playerCount">—</div></div>
+    <div class="stat"><div class="label">OPEN SLOTS</div><div class="value" id="slotCount">—</div></div>
+  </section>
 
-<aside class="panel">  
-  <div class="panel-head">  
-    <div>  
-      <div class="panel-title">RARITY INTELLIGENCE</div>  
-      <div class="panel-sub">Pet data status</div>  
-    </div>  
-    <span class="tag">BETA</span>  
-  </div>  
+  <section class="panel top-panel">
+    <div class="panel-head">
+      <div>
+        <div class="panel-title">TOP 10 RAREST FINDS</div>
+        <div class="panel-sub" id="coverage">Waiting for scanner reports…</div>
+      </div>
+      <span class="tag" id="topState">WAITING</span>
+    </div>
+    <div id="topList"><div class="empty">Loading findings…</div></div>
+  </section>
 
-  <div class="side-content">  
-    <div class="rarity">  
-      <div class="rarity-icon">✧</div>  
-      <h3>BEST RARITY DETECTOR</h3>  
-      <p>  
-        The server finder works, but Roblox's public API  
-        does not reveal which eggs or pets are inside  
-        other servers.  
-      </p>  
-      <div class="notice">  
-        PET FEED NOT CONNECTED<br>  
-        No invented pet names or rarity scores.  
-        A real pet data source is needed for global  
-        rarity detection.  
-      </div>  
-    </div>  
+  <section class="layout">
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <div class="panel-title">PUBLIC SERVER FINDER</div>
+          <div class="panel-sub">Live public server results</div>
+        </div>
+        <span class="tag" id="listState">READY</span>
+      </div>
+      <div class="toolbar">
+        <button class="btn primary" id="scanBtn">REFRESH SERVERS</button>
+        <button class="btn" id="refreshBtn">↻ REFRESH</button>
+        <button class="btn" id="moreBtn">LOAD MORE ↓</button>
+      </div>
+      <div id="serverList"><div class="empty">Loading public servers…</div></div>
+    </div>
 
-    <div class="api-info">  
-      <div class="api-row">  
-        <span>GAME</span><strong>Steal An Egg</strong>  
-      </div>  
-      <div class="api-row">  
-        <span>PLACE ID</span><strong>107778070777162</strong>  
-      </div>  
-      <div class="api-row">  
-        <span>API STATUS</span><strong id="apiSide">Checking…</strong>  
-      </div>  
-      <div class="api-row">  
-        <span>SCAN MODE</span><strong>Public servers</strong>  
-      </div>  
-    </div>  
-  </div>  
-</aside>
+    <aside class="panel">
+      <div class="panel-head">
+        <div>
+          <div class="panel-title">RARITY INTELLIGENCE</div>
+          <div class="panel-sub">Pet data status</div>
+        </div>
+        <span class="tag">BETA</span>
+      </div>
+      <div class="side-content">
+        <div class="rarity">
+          <div class="rarity-icon">✧</div>
+          <h3>BEST RARITY DETECTOR</h3>
+          <p>Roblox's public API does not reveal what is inside a server. Pets come from scanner clients that join each server and report what they see.</p>
+          <div class="notice" id="feedNotice">PET FEED: checking…</div>
+        </div>
+        <div class="api-info">
+          <div class="api-row"><span>GAME</span><strong>Steal An Egg</strong></div>
+          <div class="api-row"><span>PLACE ID</span><strong>107778070777162</strong></div>
+          <div class="api-row"><span>API STATUS</span><strong id="apiSide">Checking…</strong></div>
+          <div class="api-row"><span>SERVERS SCANNED</span><strong id="scannedSide">—</strong></div>
+          <div class="api-row"><span>REPORT WINDOW</span><strong id="windowSide">—</strong></div>
+        </div>
+      </div>
+    </aside>
+  </section>
+</main>
 
-  </section>  
-</main>  <footer class="wrap">  
-  <b>BEST RARITY FINDER</b> · UNOFFICIAL COMMUNITY TOOL  
-</footer>  <div class="toast" id="toast"></div>  <script>  
-const API = "https://best-rarity-finder.onrender.com";  
-const PLACE_ID = "107778070777162";  
-  
-let servers = [];  
-let cursor = null;  
-let loading = false;  
-let toastTimer;  
-  
-const $ = id => document.getElementById(id);  
-  
-function toast(message) {  
-  $("toast").textContent = message;  
-  $("toast").classList.add("show");  
-  clearTimeout(toastTimer);  
-  toastTimer = setTimeout(  
-    () => $("toast").classList.remove("show"), 3000  
-  );  
-}  
-  
-function setApi(ok) {  
-  $("apiStatus").textContent = ok ? "API ONLINE" : "API OFFLINE";  
-  $("apiSide").textContent = ok ? "Connected" : "Unavailable";  
-  $("apiStatus").style.color = ok ? "var(--green)" : "#ff6c91";  
-}  
-  
-function escapeHtml(value) {  
-  return String(value).replace(/[&<>"']/g, c => ({  
-    "&":"&amp;", "<":"&lt;", ">":"&gt;",  
-    '"':"&quot;", "'":"&#39;"  
-  })[c]);  
-}  
-  
-function updateStats() {  
-  $("serverCount").textContent = servers.length;  
-  $("playerCount").textContent = servers.reduce(  
-    (n, s) => n + (Number(s.playing) || 0), 0  
-  );  
-  $("slotCount").textContent = servers.reduce(  
-    (n, s) => n + Math.max(  
-      0, (Number(s.maxPlayers) || 0) - (Number(s.playing) || 0)  
-    ), 0  
-  );  
-}  
-  
-function renderServers() {  
-  const list = $("serverList");  
-  
-  if (!servers.length) {  
-    list.innerHTML = '<div class="empty">No servers loaded.</div>';  
-    updateStats();  
-    return;  
-  }  
-  
-  list.innerHTML = servers.map((s, i) => {  
-    const id = escapeHtml(s.id);  
-    const playing = Number(s.playing) || 0;  
-    const max = Number(s.maxPlayers) || 0;  
-    const ping = Number.isFinite(Number(s.ping))  
-      ? Math.round(Number(s.ping)) + " ms" : "N/A";  
-  
-    return `  
-      <article class="server">  
-        <div>  
-          <div class="server-id">SERVER #${i + 1} · ${id}</div>  
-          <div class="meta">  
-            <span>PLAYERS <b>${playing}/${max || "?"}</b></span>  
-            <span>OPEN <b>${Math.max(0, max-playing)}</b></span>  
-            <span>PING <b>${ping}</b></span>  
-          </div>  
-        </div>  
-        <div class="server-buttons">  
-          <button class="join" data-join="${i}">JOIN ↗</button>  
-          <button class="copy" data-copy="${i}">COPY ID</button>  
-        </div>  
-      </article>`;  
-  }).join("");  
-  
-  updateStats();  
-}  
-  
-async function loadServers(append = false) {  
-  if (loading) return;  
-  loading = true;  
-  
-  ["globalScan","refreshTop","scanBtn","refreshBtn","moreBtn"]  
-    .forEach(id => $(id).disabled = true);  
-  
-  $("listState").textContent = "SCANNING";  
-  
-  if (!append) {  
-    servers = [];  
-    cursor = null;  
-    renderServers();  
-  }  
-  
-  $("serverList").innerHTML =  
-    '<div class="empty">Scanning servers…</div>';  
-  
-  try {  
-    const url = new URL(API + "/api/servers");  
-  
-    if (append && cursor) {  
-      url.searchParams.set("cursor", cursor);  
-    }  
-  
-    const response = await fetch(url);  
-    if (!response.ok) throw Error("HTTP " + response.status);  
-  
-    const data = await response.json();  
-    const known = new Set(servers.map(s => s.id));  
-  
-    for (const s of (data.data || [])) {  
-      if (s.id && !known.has(s.id)) {  
-        servers.push(s);  
-        known.add(s.id);  
-      }  
-    }  
-  
-    cursor = data.nextPageCursor || null;  
-    setApi(true);  
-    $("listState").textContent = "LIVE";  
-    renderServers();  
-    toast("Scan complete · " + servers.length + " servers loaded");  
-  } catch (err) {  
-    setApi(false);  
-    $("listState").textContent = "ERROR";  
-    $("serverList").innerHTML =  
-      '<div class="empty">Could not load servers. Check Render and try again.</div>';  
-    toast("API connection failed. Try again in a moment.");  
-    console.error(err);  
-  } finally {  
-    loading = false;  
-    ["globalScan","refreshTop","scanBtn","refreshBtn"]  
-      .forEach(id => $(id).disabled = false);  
-    $("moreBtn").disabled = !cursor;  
-    updateStats();  
-  }  
-}  
-  
-function joinServer(server) {  
-  if (!server || !server.id) return;  
-  const url = "roblox://experiences/start?placeId=" +  
-    PLACE_ID + "&gameInstanceId=" + encodeURIComponent(server.id);  
-  
-  window.location.href = url;  
-  toast("Opening Roblox. The server may be full or unavailable.");  
-}  
-  
-document.addEventListener("click", event => {  
-  const join = event.target.closest("[data-join]");  
-  if (join) {  
-    joinServer(servers[Number(join.dataset.join)]);  
-    return;  
-  }  
-  
-  const copy = event.target.closest("[data-copy]");  
-  if (copy) {  
-    const server = servers[Number(copy.dataset.copy)];  
-    if (!server) return;  
-  
-    if (navigator.clipboard) {  
-      navigator.clipboard.writeText(server.id)  
-        .then(() => toast("Job ID copied"))  
-        .catch(() => toast(server.id));  
-    } else {  
-      toast(server.id);  
-    }  
-  }  
-});  
-  
-$("globalScan").onclick = () => loadServers(false);  
-$("scanBtn").onclick = () => loadServers(false);  
-$("refreshTop").onclick = () => loadServers(false);  
-$("refreshBtn").onclick = () => loadServers(false);  
-$("moreBtn").onclick = () => cursor && loadServers(true);  
-  
-fetch(API + "/api/health")  
-  .then(r => r.json())  
-  .then(d => setApi(Boolean(d.ok)))  
-  .catch(() => setApi(false));  
-  
-loadServers(false);  
-</script>  </body>  
+<footer class="wrap"><b>BEST RARITY FINDER</b> · UNOFFICIAL COMMUNITY TOOL</footer>
+<div class="toast" id="toast"></div>
+
+<script>
+const API = "https://best-rarity-finder.onrender.com";
+const PLACE_ID = "107778070777162";
+const PAGE = 25;
+const TOP_REFRESH_MS = 15000;
+
+let servers = [];
+let shown = PAGE;
+let top = [];
+let loading = false;
+let toastTimer;
+
+const $ = id => document.getElementById(id);
+
+function toast(message) {
+  $("toast").textContent = message;
+  $("toast").classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => $("toast").classList.remove("show"), 3000);
+}
+
+function setApi(ok) {
+  $("apiStatus").textContent = ok ? "API ONLINE" : "API OFFLINE";
+  $("apiSide").textContent = ok ? "Connected" : "Unavailable";
+  $("apiStatus").style.color = ok ? "var(--green)" : "#ff6c91";
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, c => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  })[c]);
+}
+
+function formatMoney(n) {
+  n = Number(n);
+  if (!Number.isFinite(n)) return "—";
+  const a = Math.abs(n);
+  if (a >= 1e15) return (n / 1e15).toFixed(2) + "Qa";
+  if (a >= 1e12) return (n / 1e12).toFixed(2) + "T";
+  if (a >= 1e9) return (n / 1e9).toFixed(2) + "B";
+  if (a >= 1e6) return (n / 1e6).toFixed(2) + "M";
+  if (a >= 1e3) return (n / 1e3).toFixed(2) + "K";
+  return String(Math.floor(n));
+}
+
+function timeAgo(ts) {
+  const s = Math.max(0, Math.round((Date.now() - Number(ts)) / 1000));
+  if (s < 60) return s + "s ago";
+  if (s < 3600) return Math.floor(s / 60) + " min ago";
+  return Math.floor(s / 3600) + " h ago";
+}
+
+function updateStats() {
+  $("serverCount").textContent = servers.length;
+  $("playerCount").textContent = servers.reduce((n, s) => n + (Number(s.playing) || 0), 0);
+  $("slotCount").textContent = servers.reduce(
+    (n, s) => n + Math.max(0, (Number(s.maxPlayers) || 0) - (Number(s.playing) || 0)), 0
+  );
+}
+
+// ---------- TOP 10 ----------
+function petImg(p) {
+  const url = String(p.imageUrl || "");
+  if (/^https:\/\/[a-z0-9.-]+\.rbxcdn\.com\//i.test(url)) {
+    return `<img class="pet" src="${escapeHtml(url)}" alt="${escapeHtml(p.name)}" loading="lazy" onerror="this.style.visibility='hidden'">`;
+  }
+  return `<div class="pet pet-ph">${escapeHtml(String(p.name || "?").charAt(0).toUpperCase())}</div>`;
+}
+
+function renderTop(data) {
+  const list = $("topList");
+
+  if (!top.length) {
+    list.innerHTML = '<div class="empty">No findings yet.<br>A scanner client running AUTO must visit servers and send reports.</div>';
+  } else {
+    list.innerHTML = top.map((p, i) => `
+      <article class="find">
+        <div class="rank">#${i + 1}</div>
+        ${petImg(p)}
+        <div class="find-main">
+          <div class="find-name">${escapeHtml(p.name)}${p.verified ? '<span class="ok">✓ VERIFIED</span>' : ""}</div>
+          <div class="meta">
+            <span>RARITY <b>${escapeHtml(p.rarity)}</b></span>
+            <span>MUTATIONS <b>${escapeHtml(p.mutations)}</b></span>
+            <span>SEEN <b>${timeAgo(p.updatedAt)}</b></span>
+          </div>
+          <div class="server-id">JOB ID · ${escapeHtml(p.jobId)}</div>
+        </div>
+        <div class="find-money"><small>MONEY / SECOND</small>${formatMoney(p.moneyPerSecond)}</div>
+        <div class="server-buttons">
+          <button class="join" data-tjoin="${i}">JOIN ↗</button>
+          <button class="copy" data-tcopy="${i}">COPY ID</button>
+        </div>
+      </article>`).join("");
+  }
+
+  const c = (data && data.coverage) || {};
+  const scanned = Number(c.serversScanned) || 0;
+  const known = Number(c.serversKnown) || 0;
+  const mins = Math.round((Number(data && data.ttlSeconds) || 900) / 60);
+
+  $("coverage").textContent =
+    `Scanned ${scanned} of ${known} known servers in the last ${mins} min. Not every server is covered.`;
+  $("scannedSide").textContent = `${scanned} / ${known}`;
+  $("windowSide").textContent = `${mins} min`;
+  $("topState").textContent = top.length ? "LIVE" : "WAITING";
+  $("feedNotice").innerHTML = top.length
+    ? "PET FEED ACTIVE<br>Results come from scanner reports. Names, rarity and income are as reported by the game client."
+    : "PET FEED WAITING<br>No scanner has reported recently. No pet data is invented.";
+}
+
+async function loadTop() {
+  try {
+    const response = await fetch(API + "/api/top10", { cache: "no-store" });
+    if (!response.ok) throw Error("HTTP " + response.status);
+    const data = await response.json();
+    top = Array.isArray(data.results) ? data.results : [];
+    setApi(true);
+    renderTop(data);
+  } catch (err) {
+    setApi(false);
+    $("topState").textContent = "ERROR";
+    if (!top.length) {
+      $("topList").innerHTML = '<div class="empty">Could not load the ranking. The API may be waking up, try again in a minute.</div>';
+    }
+    console.error(err);
+  }
+}
+
+// ---------- Servidores ----------
+function renderServers() {
+  const list = $("serverList");
+
+  if (!servers.length) {
+    list.innerHTML = '<div class="empty">No servers loaded.</div>';
+    $("moreBtn").disabled = true;
+    updateStats();
+    return;
+  }
+
+  list.innerHTML = servers.slice(0, shown).map((s, i) => {
+    const id = escapeHtml(s.id);
+    const playing = Number(s.playing) || 0;
+    const max = Number(s.maxPlayers) || 0;
+    const ping = Number.isFinite(Number(s.ping)) ? Math.round(Number(s.ping)) + " ms" : "N/A";
+
+    return `
+      <article class="server">
+        <div>
+          <div class="server-id">SERVER #${i + 1} · ${id}</div>
+          <div class="meta">
+            <span>PLAYERS <b>${playing}/${max || "?"}</b></span>
+            <span>OPEN <b>${Math.max(0, max - playing)}</b></span>
+            <span>PING <b>${ping}</b></span>
+          </div>
+        </div>
+        <div class="server-buttons">
+          <button class="join" data-join="${i}">JOIN ↗</button>
+          <button class="copy" data-copy="${i}">COPY ID</button>
+        </div>
+      </article>`;
+  }).join("");
+
+  $("moreBtn").disabled = shown >= servers.length;
+  updateStats();
+}
+
+async function loadServers() {
+  if (loading) return;
+  loading = true;
+
+  ["globalScan", "refreshTop", "scanBtn", "refreshBtn", "moreBtn"].forEach(id => $(id).disabled = true);
+  $("listState").textContent = "LOADING";
+  $("serverList").innerHTML = '<div class="empty">Loading servers…</div>';
+
+  try {
+    const response = await fetch(API + "/api/servers");
+    if (!response.ok) throw Error("HTTP " + response.status);
+
+    const data = await response.json();
+    servers = Array.isArray(data.servers) ? data.servers : [];
+    shown = PAGE;
+
+    setApi(true);
+    $("listState").textContent = data.stale ? "STALE" : "LIVE";
+    renderServers();
+    toast(servers.length + " servers loaded");
+  } catch (err) {
+    setApi(false);
+    $("listState").textContent = "ERROR";
+    $("serverList").innerHTML = '<div class="empty">Could not load servers. Check that the API is running and try again.</div>';
+    toast("API connection failed. Try again in a moment.");
+    console.error(err);
+  } finally {
+    loading = false;
+    ["globalScan", "refreshTop", "scanBtn", "refreshBtn"].forEach(id => $(id).disabled = false);
+    $("moreBtn").disabled = shown >= servers.length;
+    updateStats();
+  }
+}
+
+// ---------- Acciones ----------
+function joinServer(jobId) {
+  if (!jobId) return;
+  window.location.href = "roblox://experiences/start?placeId=" + PLACE_ID +
+    "&gameInstanceId=" + encodeURIComponent(jobId);
+  toast("Opening Roblox. The server may be full or unavailable.");
+}
+
+function copyId(jobId) {
+  if (!jobId) return;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(jobId)
+      .then(() => toast("Job ID copied"))
+      .catch(() => toast(jobId));
+  } else {
+    toast(jobId);
+  }
+}
+
+document.addEventListener("click", event => {
+  const t = event.target;
+  let el;
+
+  if ((el = t.closest("[data-join]"))) return joinServer((servers[Number(el.dataset.join)] || {}).id);
+  if ((el = t.closest("[data-copy]"))) return copyId((servers[Number(el.dataset.copy)] || {}).id);
+  if ((el = t.closest("[data-tjoin]"))) return joinServer((top[Number(el.dataset.tjoin)] || {}).jobId);
+  if ((el = t.closest("[data-tcopy]"))) return copyId((top[Number(el.dataset.tcopy)] || {}).jobId);
+});
+
+$("globalScan").onclick = () => { loadServers(); loadTop(); };
+$("scanBtn").onclick = () => loadServers();
+$("refreshTop").onclick = () => loadServers();
+$("refreshBtn").onclick = () => loadServers();
+$("moreBtn").onclick = () => { shown += PAGE; renderServers(); };
+
+fetch(API + "/api/health")
+  .then(r => r.json())
+  .then(d => setApi(Boolean(d.ok)))
+  .catch(() => setApi(false));
+
+loadServers();
+loadTop();
+setInterval(loadTop, TOP_REFRESH_MS);
+</script>
+</body>
 </html>
