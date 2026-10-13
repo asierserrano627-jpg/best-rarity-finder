@@ -21,6 +21,8 @@ const VISIT_COOLDOWN = REPORT_TTL; // no repetir un servidor ya escaneado
 const FAILED_COOLDOWN = 5 * 60_000; // no repetir un servidor que falló
 const JOB_MIN_INTERVAL = 10_000; // mínimo entre informes del mismo servidor
 const MAX_REPORTS = 2000;
+const THUMB_TTL = 60 * 60_000; // caché de imágenes correctas
+const THUMB_FAIL_TTL = 5 * 60_000; // caché de imágenes no disponibles
 const STRICT_JOBID = process.env.STRICT_JOBID !== "false"; // rechazar JobIds desconocidos
 const IP_SALT = process.env.IP_SALT || "brf-salt";
 
@@ -55,6 +57,7 @@ const reports = new Map(); // jobId -> informe
 const requestCounts = new Map(); // "bucket:ip" -> contador
 const assigned = new Map(); // jobId -> momento de asignación
 const visited = new Map(); // jobId -> { at, ok }
+const thumbCache = new Map(); // imageId -> { url, at }
 
 // Página principal
 app.get("/", (req, res) => {
@@ -404,6 +407,8 @@ app.post("/api/reports", async (req, res) => {
         ).slice(0, 200);
 
         const moneyPerSecond = Number(pet.moneyPerSecond);
+        // Solo dígitos: es el ID numérico de la imagen (rbxassetid)
+        const imageId = String(pet.imageId || "").replace(/\D/g, "").slice(0, 20);
 
         if (
             !name ||
@@ -418,7 +423,8 @@ app.post("/api/reports", async (req, res) => {
             name,
             rarity,
             mutations,
-            moneyPerSecond
+            moneyPerSecond,
+            imageId
         });
     }
 
@@ -487,8 +493,64 @@ app.post("/api/reports", async (req, res) => {
     });
 });
 
+// Convierte IDs de imagen de Roblox en URLs reales (con caché)
+async function resolveThumbnails(ids) {
+    const now = Date.now();
+    const missing = [...new Set(ids)].filter(id => {
+        const c = thumbCache.get(id);
+        return !c || now - c.at > (c.url ? THUMB_TTL : THUMB_FAIL_TTL);
+    });
+
+    if (missing.length === 0) return;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8_000);
+
+    try {
+        const url =
+            `https://thumbnails.roblox.com/v1/assets?assetIds=${missing.join(",")}&size=150x150&format=Png`;
+
+        const response = await fetch(url, {
+            signal: controller.signal,
+            headers: {
+                "Accept": "application/json",
+                "User-Agent": "BestRarityFinder/1.0"
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Roblox thumbnails HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        const got = new Set();
+
+        for (const item of data.data || []) {
+            const id = String(item.targetId);
+            // "PrivateImage" es una imagen genérica: el asset no es público
+            if (
+                item.state === "Completed" &&
+                item.imageUrl &&
+                !/PrivateImage/i.test(item.imageUrl)
+            ) {
+                thumbCache.set(id, { url: item.imageUrl, at: now });
+                got.add(id);
+            }
+        }
+
+        for (const id of missing) {
+            if (!got.has(id)) thumbCache.set(id, { url: null, at: now });
+        }
+    } catch (error) {
+        console.error("Error obteniendo imágenes:", error.message);
+        for (const id of missing) thumbCache.set(id, { url: null, at: now });
+    } finally {
+        clearTimeout(timeout);
+    }
+}
+
 // TOP 10 de mascotas reportadas recientemente
-app.get("/api/top10", (req, res) => {
+app.get("/api/top10", async (req, res) => {
     const now = Date.now();
 
     for (const [jobId, report] of reports.entries()) {
@@ -514,12 +576,21 @@ app.get("/api/top10", (req, res) => {
         (a, b) => b.moneyPerSecond - a.moneyPerSecond
     );
 
+    const topResults = results.slice(0, 10);
+
+    await resolveThumbnails(topResults.map(r => r.imageId).filter(Boolean));
+
+    for (const r of topResults) {
+        const c = r.imageId ? thumbCache.get(r.imageId) : null;
+        r.imageUrl = c && c.url ? c.url : null;
+    }
+
     res.setHeader("Cache-Control", "no-store");
 
     return res.json({
         ok: true,
-        count: Math.min(results.length, 10),
-        results: results.slice(0, 10),
+        count: topResults.length,
+        results: topResults,
         coverage: coverage(),
         ttlSeconds: REPORT_TTL / 1000
     });
