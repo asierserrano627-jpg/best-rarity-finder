@@ -23,7 +23,8 @@ const JOB_MIN_INTERVAL = 10_000; // mínimo entre informes del mismo servidor
 const MAX_REPORTS = 2000;
 const THUMB_TTL = 60 * 60_000; // caché de imágenes correctas
 const THUMB_FAIL_TTL = 5 * 60_000; // caché de imágenes no disponibles
-const STRICT_JOBID = process.env.STRICT_JOBID !== "false"; // rechazar JobIds desconocidos
+const STRICT_JOBID = process.env.STRICT_JOBID === "true"; // true: rechazar JobIds que no estén en la lista de Roblox
+const JOBID_FORMAT = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i; // los JobId de Roblox son GUID
 const IP_SALT = process.env.IP_SALT || "brf-salt";
 
 app.use((req, res, next) => {
@@ -376,7 +377,15 @@ app.post("/api/reports", async (req, res) => {
         });
     }
 
-    // El JobId debe ser un servidor real (de la lista de Roblox o asignado por nosotros)
+    if (!JOBID_FORMAT.test(jobId)) {
+        return res.status(400).json({
+            ok: false,
+            error: "Formato de JobId no válido."
+        });
+    }
+
+    // Con STRICT_JOBID=true el JobId debe estar en la lista de Roblox o haber sido asignado.
+    // Por defecto se acepta cualquier GUID: la lista solo cubre unos 300 servidores.
     let known = assigned.has(jobId) || visited.has(jobId);
 
     if (!known) {
