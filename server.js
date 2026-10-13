@@ -8,7 +8,10 @@ const PLACE_ID = "107778070777162";
 const CACHE_TTL = 30_000;
 const REPORT_TTL = 90_000;
 const DEFAULT_COOLDOWN = 60_000;
+const REPORT_RATE_LIMIT = 10;
+const REPORT_RATE_WINDOW = 60_000;
 
+app.set("trust proxy", 1);
 app.use(express.json({ limit: "100kb" }));
 
 app.use((req, res, next) => {
@@ -19,10 +22,7 @@ app.use((req, res, next) => {
     "Content-Type, X-Report-Key"
   );
 
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(204);
-  }
-
+  if (req.method === "OPTIONS") return res.sendStatus(204);
   next();
 });
 
@@ -31,9 +31,8 @@ let cacheTime = 0;
 let cooldownUntil = 0;
 let pendingRequest = null;
 
-// Prototipo: los reportes se guardan en memoria.
-// Se perderán si Render reinicia el proceso.
 const reports = new Map();
+const reportRequests = new Map();
 
 app.get("/", (req, res) => {
   res.json({
@@ -53,12 +52,11 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// Lista de servidores públicos de Roblox.
+// Servidores públicos de Roblox.
 app.get("/api/servers", async (req, res) => {
   const cursor = String(req.query.cursor || "");
   const now = Date.now();
 
-  // No reutilizar una página almacenada para otro cursor.
   if (!cursor && cachedServers && now - cacheTime < CACHE_TTL) {
     res.setHeader("X-Cache", "HIT");
     return res.json(cachedServers);
@@ -101,6 +99,7 @@ app.get("/api/servers", async (req, res) => {
 
       if (response.status === 429) {
         const retryAfter = Number(response.headers.get("Retry-After"));
+
         cooldownUntil = Date.now() + Math.max(
           DEFAULT_COOLDOWN,
           Number.isFinite(retryAfter) && retryAfter > 0
@@ -143,7 +142,7 @@ app.get("/api/servers", async (req, res) => {
 
     if (result.error) {
       return res.status(502).json({
-        error: "Roblox no pudo devolver la lista de servidores.",
+        error: "Roblox no pudo devolver los servidores.",
         status: result.status
       });
     }
@@ -157,7 +156,7 @@ app.get("/api/servers", async (req, res) => {
   }
 });
 
-// Recibir un reporte de una fuente autorizada.
+// Recibir reportes autenticados.
 app.post("/api/reports", (req, res) => {
   const secret = process.env.REPORT_API_KEY;
 
@@ -169,6 +168,23 @@ app.post("/api/reports", (req, res) => {
 
   if (req.get("X-Report-Key") !== secret) {
     return res.status(401).json({ error: "Clave no válida." });
+  }
+
+  const now = Date.now();
+  const ip = req.ip || req.socket.remoteAddress || "unknown";
+  let rate = reportRequests.get(ip);
+
+  if (!rate || now - rate.startedAt >= REPORT_RATE_WINDOW) {
+    rate = { startedAt: now, count: 0 };
+    reportRequests.set(ip, rate);
+  }
+
+  rate.count++;
+
+  if (rate.count > REPORT_RATE_LIMIT) {
+    return res.status(429).json({
+      error: "Demasiados reportes. Espera un minuto."
+    });
   }
 
   const body = req.body;
@@ -192,7 +208,7 @@ app.post("/api/reports", (req, res) => {
     if (
       !pet ||
       typeof pet.name !== "string" ||
-      pet.name.length < 1 ||
+      pet.name.trim().length < 1 ||
       pet.name.length > 100 ||
       typeof pet.moneyPerSecond !== "number" ||
       !Number.isFinite(pet.moneyPerSecond) ||
@@ -205,7 +221,7 @@ app.post("/api/reports", (req, res) => {
     }
 
     pets.push({
-      name: pet.name,
+      name: pet.name.trim(),
       moneyPerSecond: pet.moneyPerSecond,
       rarity: typeof pet.rarity === "string"
         ? pet.rarity.slice(0, 50)
@@ -219,9 +235,11 @@ app.post("/api/reports", (req, res) => {
   reports.set(body.jobId, {
     jobId: body.jobId,
     placeId: PLACE_ID,
-    updatedAt: Date.now(),
+    updatedAt: now,
     pets
   });
+
+  res.setHeader("Cache-Control", "no-store");
 
   return res.json({
     ok: true,
@@ -230,7 +248,7 @@ app.post("/api/reports", (req, res) => {
   });
 });
 
-// TOP 10 de mascotas con reportes recientes.
+// TOP 10 de reportes recientes.
 app.get("/api/top10", (req, res) => {
   const now = Date.now();
   const results = [];
@@ -251,9 +269,7 @@ app.get("/api/top10", (req, res) => {
     }
   }
 
-  results.sort(
-    (a, b) => b.moneyPerSecond - a.moneyPerSecond
-  );
+  results.sort((a, b) => b.moneyPerSecond - a.moneyPerSecond);
 
   res.setHeader("Cache-Control", "no-store");
 
