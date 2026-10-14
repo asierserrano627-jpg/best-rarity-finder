@@ -1,0 +1,23 @@
+name: Best Rarity Finder - API Check
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 * * * *"
+
+jobs:
+  check-api:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check API health
+        run: |
+          curl --fail --show-error --silent \
+            --max-time 20 \
+            https://best-rarity-finder.onrender.com/api/health
+
+      - name: Check TOP 10
+        run: |
+          curl --fail --show-error --silent \
+            --max-time 20 \
+            https://best-rarity-finder.onrender.com/api/top10
+            
