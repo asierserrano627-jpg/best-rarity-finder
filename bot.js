@@ -1,4 +1,3 @@
-
 const API_URL = (
   process.env.API_BASE_URL ||
   "https://best-rarity-finder.onrender.com"
@@ -7,41 +6,45 @@ const API_URL = (
 const INTERVAL = 60_000;
 
 async function checkAPI() {
+  console.log("\n[" + new Date().toISOString() + "] Comprobando API...");
+
   try {
-    const response = await fetch(`${API_URL}/api/health`, {
-      signal: AbortSignal.timeout(15000)
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    const health = await response.json();
-    console.log(
-      `[${new Date().toISOString()}] API OK`,
-      health
+    const healthResponse = await fetch(
+      `${API_URL}/api/health`,
+      { signal: AbortSignal.timeout(20000) }
     );
 
-    // Comprueba también el TOP 10.
-    const topResponse = await fetch(`${API_URL}/api/top10`, {
-      signal: AbortSignal.timeout(15000)
-    });
-
-    if (!topResponse.ok) {
-      throw new Error(`TOP 10: HTTP ${topResponse.status}`);
+    if (!healthResponse.ok) {
+      throw new Error(`Health HTTP ${healthResponse.status}`);
     }
 
-    console.log("TOP 10 accesible correctamente.");
+    console.log("API:", await healthResponse.json());
+
+    const topResponse = await fetch(
+      `${API_URL}/api/top10`,
+      { signal: AbortSignal.timeout(20000) }
+    );
+
+    if (!topResponse.ok) {
+      throw new Error(`TOP 10 HTTP ${topResponse.status}`);
+    }
+
+    const data = await topResponse.json();
+
+    console.log("Mascotas registradas:", data.count ?? 0);
+
+    for (const pet of data.results ?? []) {
+      console.log(
+        `${pet.name} | ${pet.rarity} | ${pet.moneyPerSecond}/s`
+      );
+    }
+
+    console.log("Comprobación completada.");
   } catch (error) {
-    console.error("Error comprobando la API:", error.message);
+    console.error("Error:", error.message);
   }
 }
 
 console.log("BEST RARITY FINDER BOT iniciado.");
-
-async function loop() {
-  await checkAPI();
-  setTimeout(loop, INTERVAL);
-}
-
-loop();
+checkAPI();
+setInterval(checkAPI, INTERVAL);
