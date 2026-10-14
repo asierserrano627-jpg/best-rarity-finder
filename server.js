@@ -92,6 +92,7 @@ app.get("/api/health", (req, res) => {
 
 async function fetchServersFromRoblox() {
     const all = [];
+    const seen = new Set(); // Roblox repite servidores entre páginas
     let cursor = null;
 
     for (let page = 0; page < MAX_PAGES; page++) {
@@ -118,6 +119,8 @@ async function fetchServersFromRoblox() {
             const data = await response.json();
 
             for (const server of data.data || []) {
+                if (!server.id || seen.has(server.id)) continue;
+                seen.add(server.id);
                 all.push({
                     id: server.id,
                     playing: server.playing,
