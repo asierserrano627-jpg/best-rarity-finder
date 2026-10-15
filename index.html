@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -106,7 +107,7 @@ footer b{color:var(--gold)}
     </div>
     <div class="brand-name">BEST RARITY FINDER<small>STEAL AN EGG · SERVER INTEL</small></div>
   </div>
-  <div class="status"><i></i><span id="apiStatus">CONECTANDO</span></div>
+  <div class="status"><i></i><span id="apiStatus">CHECKING...</span></div>
 </header>
 
 <main class="wrap">
@@ -185,10 +186,13 @@ footer b{color:var(--gold)}
 <div class="toast" id="toast"></div>
 
 <script>
+"use strict";
+
 const API = "https://best-rarity-finder.onrender.com";
 const PLACE_ID = "107778070777162";
 const PAGE = 25;
 const TOP_REFRESH_MS = 15000;
+const HEALTH_REFRESH_MS = 15000;
 
 let servers = [];
 let shown = PAGE;
@@ -205,15 +209,49 @@ function toast(message) {
   toastTimer = setTimeout(() => $("toast").classList.remove("show"), 3000);
 }
 
+/* El estado de salud se actualiza solamente desde /api/health. */
 function setApi(ok) {
   $("apiStatus").textContent = ok ? "API ONLINE" : "API OFFLINE";
   $("apiSide").textContent = ok ? "Connected" : "Unavailable";
   $("apiStatus").style.color = ok ? "var(--green)" : "#ff6c91";
+
+  const dot = document.querySelector(".status i");
+  if (dot) {
+    dot.style.background = ok ? "var(--green)" : "#ff6c91";
+    dot.style.boxShadow = ok ? "0 0 12px var(--green)" : "0 0 12px #ff6c91";
+  }
+}
+
+async function checkApiHealth() {
+  try {
+    const response = await fetch(API + "/api/health", {
+      cache: "no-store"
+    });
+
+    if (!response.ok) {
+      throw new Error("HTTP " + response.status);
+    }
+
+    const data = await response.json();
+
+    if (data && data.ok === true) {
+      setApi(true);
+    } else {
+      setApi(false);
+    }
+  } catch (error) {
+    setApi(false);
+    console.error("API health check failed:", error);
+  }
 }
 
 function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, c => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  return String(value ?? "").replace(/[&<>"']/g, c => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
   })[c]);
 }
 
@@ -236,48 +274,70 @@ function timeAgo(ts) {
   return Math.floor(s / 3600) + " h ago";
 }
 
+/* ---------- Estadísticas ---------- */
 function updateStats() {
   $("serverCount").textContent = servers.length;
-  $("playerCount").textContent = servers.reduce((n, s) => n + (Number(s.playing) || 0), 0);
+  $("playerCount").textContent = servers.reduce(
+    (n, s) => n + (Number(s.playing) || 0), 0
+  );
   $("slotCount").textContent = servers.reduce(
-    (n, s) => n + Math.max(0, (Number(s.maxPlayers) || 0) - (Number(s.playing) || 0)), 0
+    (n, s) => n + Math.max(
+      0,
+      (Number(s.maxPlayers) || 0) - (Number(s.playing) || 0)
+    ), 0
   );
 }
 
-// ---------- TOP 10 ----------
+/* ---------- TOP 10 ---------- */
 function petImg(p) {
   const url = String(p.imageUrl || "");
+
   if (/^https:\/\/[a-z0-9.-]+\.rbxcdn\.com\//i.test(url)) {
-    return `<img class="pet" src="${escapeHtml(url)}" alt="${escapeHtml(p.name)}" loading="lazy" onerror="this.style.visibility='hidden'">`;
+    return `<img class="pet"
+      src="${escapeHtml(url)}"
+      alt="${escapeHtml(p.name || "Pet")}"
+      loading="lazy"
+      onerror="this.style.visibility='hidden'">`;
   }
-  return `<div class="pet pet-ph">${escapeHtml(String(p.name || "?").charAt(0).toUpperCase())}</div>`;
+
+  return `<div class="pet pet-ph">${
+    escapeHtml(String(p.name || "?").charAt(0).toUpperCase())
+  }</div>`;
 }
 
 function renderTop(data) {
   const list = $("topList");
 
   if (!top.length) {
-    list.innerHTML = '<div class="empty">No findings yet.<br>A scanner client running AUTO must visit servers and send reports.</div>';
+    list.innerHTML =
+      '<div class="empty">No findings yet.<br>A scanner client running AUTO must visit servers and send reports.</div>';
   } else {
     list.innerHTML = top.map((p, i) => `
       <article class="find">
         <div class="rank">#${i + 1}</div>
         ${petImg(p)}
         <div class="find-main">
-          <div class="find-name">${escapeHtml(p.name)}${p.verified ? '<span class="ok">✓ VERIFIED</span>' : ""}</div>
-          <div class="meta">
-            <span>RARITY <b>${escapeHtml(p.rarity)}</b></span>
-            <span>MUTATIONS <b>${escapeHtml(p.mutations)}</b></span>
-            <span>SEEN <b>${timeAgo(p.updatedAt)}</b></span>
+          <div class="find-name">
+            ${escapeHtml(p.name)}
+            ${p.verified ? '<span class="ok">✓ VERIFIED</span>' : ""}
           </div>
-          <div class="server-id">JOB ID · ${escapeHtml(p.jobId)}</div>
+          <div class="meta">
+            <span>RARITY <b>${escapeHtml(p.rarity || "Unknown")}</b></span>
+            <span>MUTATIONS <b>${escapeHtml(p.mutations || "None")}</b></span>
+            <span>SEEN <b>${escapeHtml(timeAgo(p.updatedAt))}</b></span>
+          </div>
+          <div class="server-id">JOB ID · ${escapeHtml(p.jobId || "Unavailable")}</div>
         </div>
-        <div class="find-money"><small>MONEY / SECOND</small>${formatMoney(p.moneyPerSecond)}</div>
+        <div class="find-money">
+          <small>MONEY / SECOND</small>
+          ${formatMoney(p.moneyPerSecond)}
+        </div>
         <div class="server-buttons">
           <button class="join" data-tjoin="${i}">JOIN ↗</button>
           <button class="copy" data-tcopy="${i}">COPY ID</button>
         </div>
-      </article>`).join("");
+      </article>
+    `).join("");
   }
 
   const c = (data && data.coverage) || {};
@@ -297,23 +357,28 @@ function renderTop(data) {
 
 async function loadTop() {
   try {
-    const response = await fetch(API + "/api/top10", { cache: "no-store" });
-    if (!response.ok) throw Error("HTTP " + response.status);
+    const response = await fetch(API + "/api/top10", {
+      cache: "no-store"
+    });
+
+    if (!response.ok) throw new Error("HTTP " + response.status);
+
     const data = await response.json();
     top = Array.isArray(data.results) ? data.results : [];
-    setApi(true);
     renderTop(data);
   } catch (err) {
-    setApi(false);
     $("topState").textContent = "ERROR";
+
     if (!top.length) {
-      $("topList").innerHTML = '<div class="empty">Could not load the ranking. The API may be waking up, try again in a minute.</div>';
+      $("topList").innerHTML =
+        '<div class="empty">Could not load the ranking. The API may be waking up. Try again in a minute.</div>';
     }
-    console.error(err);
+
+    console.error("Could not load top 10:", err);
   }
 }
 
-// ---------- Servidores ----------
+/* ---------- Servidores ---------- */
 function renderServers() {
   const list = $("serverList");
 
@@ -325,10 +390,12 @@ function renderServers() {
   }
 
   list.innerHTML = servers.slice(0, shown).map((s, i) => {
-    const id = escapeHtml(s.id);
+    const id = escapeHtml(s.id || "");
     const playing = Number(s.playing) || 0;
     const max = Number(s.maxPlayers) || 0;
-    const ping = Number.isFinite(Number(s.ping)) ? Math.round(Number(s.ping)) + " ms" : "N/A";
+    const ping = Number.isFinite(Number(s.ping))
+      ? Math.round(Number(s.ping)) + " ms"
+      : "N/A";
 
     return `
       <article class="server">
@@ -353,80 +420,118 @@ function renderServers() {
 
 async function loadServers() {
   if (loading) return;
+
   loading = true;
 
-  ["globalScan", "refreshTop", "scanBtn", "refreshBtn", "moreBtn"].forEach(id => $(id).disabled = true);
+  ["globalScan", "refreshTop", "scanBtn", "refreshBtn", "moreBtn"]
+    .forEach(id => $(id).disabled = true);
+
   $("listState").textContent = "LOADING";
   $("serverList").innerHTML = '<div class="empty">Loading servers…</div>';
 
   try {
-    const response = await fetch(API + "/api/servers");
-    if (!response.ok) throw Error("HTTP " + response.status);
+    const response = await fetch(API + "/api/servers", {
+      cache: "no-store"
+    });
+
+    if (!response.ok) throw new Error("HTTP " + response.status);
 
     const data = await response.json();
     servers = Array.isArray(data.servers) ? data.servers : [];
     shown = PAGE;
 
-    setApi(true);
     $("listState").textContent = data.stale ? "STALE" : "LIVE";
     renderServers();
     toast(servers.length + " servers loaded");
   } catch (err) {
-    setApi(false);
     $("listState").textContent = "ERROR";
-    $("serverList").innerHTML = '<div class="empty">Could not load servers. Check that the API is running and try again.</div>';
-    toast("API connection failed. Try again in a moment.");
-    console.error(err);
+    $("serverList").innerHTML =
+      '<div class="empty">Could not load servers. Check that the API is running and try again.</div>';
+    toast("Could not load servers. Try again in a moment.");
+    console.error("Could not load servers:", err);
   } finally {
     loading = false;
-    ["globalScan", "refreshTop", "scanBtn", "refreshBtn"].forEach(id => $(id).disabled = false);
+
+    ["globalScan", "refreshTop", "scanBtn", "refreshBtn"]
+      .forEach(id => $(id).disabled = false);
+
     $("moreBtn").disabled = shown >= servers.length;
     updateStats();
   }
 }
 
-// ---------- Acciones ----------
+/* ---------- Acciones ---------- */
 function joinServer(jobId) {
-  if (!jobId) return;
-  window.location.href = "roblox://experiences/start?placeId=" + PLACE_ID +
+  if (!jobId) {
+    toast("No server ID available");
+    return;
+  }
+
+  window.location.href =
+    "roblox://experiences/start?placeId=" + PLACE_ID +
     "&gameInstanceId=" + encodeURIComponent(jobId);
+
   toast("Opening Roblox. The server may be full or unavailable.");
 }
 
-function copyId(jobId) {
-  if (!jobId) return;
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(jobId)
-      .then(() => toast("Job ID copied"))
-      .catch(() => toast(jobId));
-  } else {
+async function copyId(jobId) {
+  if (!jobId) {
+    toast("No server ID available");
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(jobId);
+    toast("Job ID copied");
+  } catch (_) {
     toast(jobId);
   }
 }
 
 document.addEventListener("click", event => {
   const t = event.target;
+  if (!(t instanceof Element)) return;
+
   let el;
 
-  if ((el = t.closest("[data-join]"))) return joinServer((servers[Number(el.dataset.join)] || {}).id);
-  if ((el = t.closest("[data-copy]"))) return copyId((servers[Number(el.dataset.copy)] || {}).id);
-  if ((el = t.closest("[data-tjoin]"))) return joinServer((top[Number(el.dataset.tjoin)] || {}).jobId);
-  if ((el = t.closest("[data-tcopy]"))) return copyId((top[Number(el.dataset.tcopy)] || {}).jobId);
+  if ((el = t.closest("[data-join]"))) {
+    return joinServer((servers[Number(el.dataset.join)] || {}).id);
+  }
+
+  if ((el = t.closest("[data-copy]"))) {
+    return copyId((servers[Number(el.dataset.copy)] || {}).id);
+  }
+
+  if ((el = t.closest("[data-tjoin]"))) {
+    return joinServer((top[Number(el.dataset.tjoin)] || {}).jobId);
+  }
+
+  if ((el = t.closest("[data-tcopy]"))) {
+    return copyId((top[Number(el.dataset.tcopy)] || {}).jobId);
+  }
 });
 
-$("globalScan").onclick = () => { loadServers(); loadTop(); };
-$("scanBtn").onclick = () => loadServers();
-$("refreshTop").onclick = () => loadServers();
-$("refreshBtn").onclick = () => loadServers();
-$("moreBtn").onclick = () => { shown += PAGE; renderServers(); };
+$("globalScan").onclick = () => {
+  loadServers();
+  loadTop();
+  checkApiHealth();
+};
 
-fetch(API + "/api/health")
-  .then(r => r.json())
-  .then(d => setApi(Boolean(d.ok)))
-  .catch(() => setApi(false));
+$("scanBtn").onclick = loadServers;
+$("refreshTop").onclick = loadServers;
+$("refreshBtn").onclick = loadServers;
 
+$("moreBtn").onclick = () => {
+  shown += PAGE;
+  renderServers();
+};
+
+/* La salud de la API se consulta de forma independiente. */
+checkApiHealth();
 loadServers();
 loadTop();
+
+setInterval(checkApiHealth, HEALTH_REFRESH_MS);
 setInterval(loadTop, TOP_REFRESH_MS);
 </script>
 </body>
